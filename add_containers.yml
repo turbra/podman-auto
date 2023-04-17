@@ -1,0 +1,52 @@
+---
+- name: Create and start Podman container systemd service
+  hosts: localhost
+  gather_facts: yes
+  vars_prompt:
+    - name: container_name
+      prompt: "Enter the name of the container you would like to use (or type 'quit' to exit):"
+      private: no
+  tasks:
+    - name: Get container ID
+      command: podman ps -a --filter "name={{ container_name }}" --format "{{ '{{.ID}}' }}"
+      register: container_id_result
+
+    - name: Check if container exists
+      fail:
+        msg: "No container found with the name '{{ container_name }}'. Please try again."
+      when: container_id_result.stdout == ""
+
+    - name: Check if systemd service already exists
+      command: systemctl --user list-unit-files --no-legend --type=service
+      register: existing_services
+
+    - name: Fail if systemd service already exists
+      fail:
+        msg: "Systemd service for container '{{ container_name }}' already exists. Please try again."
+      when: container_name + ".service" in existing_services.stdout_lines
+
+    - name: Create systemd user directory
+      file:
+        path: "{{ ansible_env.HOME }}/.config/systemd/user"
+        state: directory
+
+    - name: Generate systemd unit file
+      command: podman generate systemd --new --name {{ container_id_result.stdout }}
+      args:
+        creates: "{{ ansible_env.HOME }}/.config/systemd/user/{{ container_name }}.service"
+      register: systemd_unit_file
+
+    - name: Write systemd unit file
+      copy:
+        content: "{{ systemd_unit_file.stdout }}"
+        dest: "{{ ansible_env.HOME }}/.config/systemd/user/{{ container_name }}.service"
+
+    - name: Enable systemd service
+      command: systemctl --user enable {{ container_name }}
+
+    - name: Start systemd service
+      command: systemctl --user start {{ container_name }}
+
+    - name: Display success message
+      debug:
+        msg: "Successfully created and started the systemd service for container '{{ container_name }}'."
