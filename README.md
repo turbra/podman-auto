@@ -1,5 +1,5 @@
 # podman-auto
-How to Auto-starting rootless pods using systemd
+## How to Auto-starting rootless pods using systemd
 
 ### Prerequisites: 
 1. Before running this script, make sure to enable lingering for your user account using:
@@ -8,77 +8,126 @@ How to Auto-starting rootless pods using systemd
 
 2. Running container(s)
 
-### Create a script named add_containers.sh and open it with your preferred text editor, like vi. 
-#### This script will be responsible for generating systemd unit files and enabling them for your current user.
+## Option 1 - Shell Script `add_containers.sh`
 
-``` bash
-#!/bin/bash
-
-function check_systemd_service_exists() {
-    local container_name="$1"
-    if systemctl --user list-unit-files --no-legend --type=service | grep -q "^$container_name\.service"; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-function get_container_id() {
-    local container_name="$1"
-    podman ps -a --filter "name=$container_name" --format "{{.ID}}" | head -n 1
-}
-
-while true; do
-    echo "Enter the name of the container you would like to use (or type 'quit' to exit):"
-    read container_name
-
-    if [[ $container_name == "quit" ]]; then
-        echo "Exiting..."
-        exit 0
-    elif check_systemd_service_exists "$container_name"; then
-        echo "Systemd service for container '$container_name' already exists. Please try again."
-    else
-        break
-    fi
-done
-
-# Generate systemd unit file
-container_id=$(get_container_id "$container_name")
-
-if [ -z "$container_id" ]; then
-    echo "No container found with the name '$container_name'. Please try again."
-    exit 1
-fi
-
-user_systemd_dir="$HOME/.config/systemd/user"
-mkdir -p "$user_systemd_dir"
-podman generate systemd --new --name "$container_id" > "$user_systemd_dir/$container_name.service"
-
-if [ $? -ne 0 ]; then
-    echo "Failed to generate systemd unit file for container '$container_name'."
-    exit 1
-fi
-
-# Enable and start the service
-systemctl --user enable "$container_name"
-systemctl --user start "$container_name"
-
-echo "Successfully created and started the systemd service for container '$container_name'."
-```
-
-### Save the script and make it executable:
-`chmod +x start_containers.sh`
+Make it executable:
+`chmod +x add_containers.sh`
 
 ### Run the script:
 `./add_containers.sh`
-```
+<details>
+<summary>Results...</summary>
+
+``` bash
 Enter the name of the container you would like to use (or type 'quit' to exit):
 hello-friend-container
 Created symlink /home/potato/.config/systemd/user/default.target.wants/hello-friend-container.service → /home/potato/.config/systemd/user/hello-friend-container.service.
 Successfully created and started the systemd service for container 'hello-friend-container'.
 ```
+<br>
+</details>
 
-### Note:
+## Option 2 - Ansible `add_containers.yml`
+
+### Run the playbook
+`ansible-playbook add_containers.yml`
+<details>
+<summary>Results...</summary>
+
+``` yaml
+Enter the name of the container you would like to use (or type 'quit' to exit):: hello-friend-container
+
+PLAY [Create and start Podman container systemd service] ***************************************************************************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Get container ID] ************************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Check if container exists] ***************************************************************************************************************************************************************
+skipping: [localhost]
+
+TASK [Check if systemd service already exists] *************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Fail if systemd service already exists] **************************************************************************************************************************************************
+skipping: [localhost]
+
+TASK [Create systemd user directory] ***********************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Generate systemd unit file] **************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Write systemd unit file] *****************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Enable systemd service] ******************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Start systemd service] *******************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Display success message] *****************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Successfully created and started the systemd service for container 'hello-friend-container'."
+}
+
+PLAY RECAP *************************************************************************************************************************************************************************************
+localhost                  : ok=9    changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0
+```
+<br>
+</details>
+
+## Decommission
+Ansible `remove_containers.yml`
+
+### Run the playbook
+`ansible-playbook remove_containers.yml`
+<details>
+<summary>Results...</summary>
+
+``` yaml
+Enter the name of the container you would like to decommission (or type 'quit' to exit):: hello-friend-container
+
+PLAY [Remove and stop Podman container systemd service] ****************************************************************************************************************************************
+
+TASK [Gathering Facts] *************************************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Check if systemd unit file exists] *******************************************************************************************************************************************************
+ok: [localhost]
+
+TASK [Fail if systemd unit file does not exist] ************************************************************************************************************************************************
+skipping: [localhost]
+
+TASK [Stop systemd service] ********************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Disable systemd service] *****************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Remove systemd unit file] ****************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Reload systemd configuration] ************************************************************************************************************************************************************
+changed: [localhost]
+
+TASK [Display success message] *****************************************************************************************************************************************************************
+ok: [localhost] => {
+    "msg": "Successfully removed and stopped the systemd service for container 'hello-friend-container'."
+}
+
+PLAY RECAP *************************************************************************************************************************************************************************************
+localhost                  : ok=7    changed=4    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0
+
+
+```
+<br>
+</details>
+
+## Note:
 If your containers are deployed via CI/CD ensure to change the Service Restart policy to `Restart=unless-stopped` otherwise systemd will start your container as soon as your CI/CD deployment stops it which mayy result with your changes not being applied.
     
 `vi .config/systemd/user/hello-friend-container.service`
