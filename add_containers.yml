@@ -1,3 +1,4 @@
+#!/usr/bin/ansible-playbook -i add_containers.yml
 ---
 - name: Create and start Podman container systemd service
   hosts: localhost
