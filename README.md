@@ -75,3 +75,6 @@ hello-friend-container
 Created symlink /home/potato/.config/systemd/user/default.target.wants/hello-friend-container.service → /home/potato/.config/systemd/user/hello-friend-container.service.
 Successfully created and started the systemd service for container 'hello-friend-container'.
 ```
+
+### Note
+ - If your containers are deployed via CI/CD ensure to change the Service Restart policy to `Restart=unless-stopped` otherwise systemd will start your container as soon as your CI/CD deployment stops it which mayy result with your changes not being applied.
