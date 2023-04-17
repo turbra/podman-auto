@@ -32,6 +32,12 @@ Successfully created and started the systemd service for container 'hello-friend
 
 ### Run the playbook
 `ansible-playbook add_containers.yml`
+
+Alternatively
+`chmod +x add_containers.yml`
+
+`./add_containers.yml`
+
 <details>
 <summary>Results...</summary>
 
@@ -86,6 +92,12 @@ Ansible `remove_containers.yml`
 
 ### Run the playbook
 `ansible-playbook remove_containers.yml`
+
+Alternatively
+`chmod +x remove_containers.yml`
+
+`./remove_containers.yml`
+
 <details>
 <summary>Results...</summary>
 
