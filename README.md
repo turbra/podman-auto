@@ -131,7 +131,7 @@ localhost                  : ok=7    changed=4    unreachable=0    failed=0    s
 ## Note:
 If your containers are deployed via CI/CD ensure to change the Service Restart policy to `Restart=unless-stopped` otherwise systemd will start your container as soon as your CI/CD deployment stops it which mayy result with your changes not being applied.
     
-`vi .config/systemd/user/hello-friend-container.service`
+`vi ~/.config/systemd/user/hello-friend-container.service`
 ```
 ...
 [Service]
