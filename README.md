@@ -76,5 +76,17 @@ Created symlink /home/potato/.config/systemd/user/default.target.wants/hello-fri
 Successfully created and started the systemd service for container 'hello-friend-container'.
 ```
 
-### Note
- - If your containers are deployed via CI/CD ensure to change the Service Restart policy to `Restart=unless-stopped` otherwise systemd will start your container as soon as your CI/CD deployment stops it which mayy result with your changes not being applied.
+### Note:
+If your containers are deployed via CI/CD ensure to change the Service Restart policy to `Restart=unless-stopped` otherwise systemd will start your container as soon as your CI/CD deployment stops it which mayy result with your changes not being applied.
+    
+`vi .config/systemd/user/hello-friend-container.service`
+```
+...
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=unless-stopped
+TimeoutStopSec=70
+...
+```
+### After updating your Systemd unit file, ensure to run the command below to ensure your changes take effect: 
+`systemctl daemon-reload`
