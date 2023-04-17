@@ -1,0 +1,36 @@
+---
+- name: Remove and stop Podman container systemd service
+  hosts: localhost
+  gather_facts: yes
+  vars_prompt:
+    - name: container_name
+      prompt: "Enter the name of the container you would like to decommission (or type 'quit' to exit):"
+      private: no
+  tasks:
+    - name: Check if systemd unit file exists
+      stat:
+        path: "{{ ansible_env.HOME }}/.config/systemd/user/{{ container_name }}.service"
+      register: unit_file_stat
+
+    - name: Fail if systemd unit file does not exist
+      fail:
+        msg: "Systemd service for container '{{ container_name }}' does not exist. Please try again."
+      when: not unit_file_stat.stat.exists
+
+    - name: Stop systemd service
+      command: systemctl --user stop {{ container_name }}
+
+    - name: Disable systemd service
+      command: systemctl --user disable {{ container_name }}
+
+    - name: Remove systemd unit file
+      file:
+        path: "{{ ansible_env.HOME }}/.config/systemd/user/{{ container_name }}.service"
+        state: absent
+
+    - name: Reload systemd configuration
+      command: systemctl --user daemon-reload
+
+    - name: Display success message
+      debug:
+        msg: "Successfully removed and stopped the systemd service for container '{{ container_name }}'."
