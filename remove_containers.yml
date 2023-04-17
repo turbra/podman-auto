@@ -1,3 +1,4 @@
+#!/usr/bin/ansible-playbook -i remove_containers.yml
 ---
 - name: Remove and stop Podman container systemd service
   hosts: localhost
