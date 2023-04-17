@@ -2,11 +2,12 @@
 ## How to Auto-starting rootless pods using systemd
 
 ### Requirements: 
-1. Before running this script, make sure to enable lingering for your user account using:
+1. podman
+2. ansible
+3. running container(s)
+4. enable lingering for your user account using:
     ##### Replace `<User>` with your username.
     `loginctl enable-linger <User>`
-
-2. Running container(s)
 
 ## Option 1 - Shell Script `add_containers.sh`
 
